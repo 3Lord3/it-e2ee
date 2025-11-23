@@ -2,14 +2,6 @@ import {useState} from "react"
 import {Button} from "@/components/ui/button"
 import {Input} from "@/components/ui/input"
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card"
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-	DialogTrigger
-} from "@/components/ui/dialog"
 import {Badge} from "@/components/ui/badge"
 import {useKeys} from "@/hooks/useKeys"
 import {useAuth} from "@/hooks/useAuth"
@@ -78,55 +70,5 @@ export function KeyManagement() {
 				</div>
 			</CardContent>
 		</Card>
-	)
-}
-
-export function SharePublicKeyDialog({userId, username}: { userId: string; username: string }) {
-	const {keyPair} = useKeys()
-	const [isOpen, setIsOpen] = useState(false)
-
-	const [e, n] = keyPair.publicKey.split(':')
-
-	return (
-		<Dialog open={isOpen} onOpenChange={setIsOpen}>
-			<DialogTrigger asChild>
-				<Button variant="outline" size="sm">
-					Отправить ключ
-				</Button>
-			</DialogTrigger>
-			<DialogContent>
-				<DialogHeader>
-					<DialogTitle>Отправить публичный ключ</DialogTitle>
-					<DialogDescription>
-						Отправьте ваш публичный ключ пользователю {username} для начала безопасного общения
-					</DialogDescription>
-				</DialogHeader>
-				<div className="space-y-4">
-					<div className="space-y-2">
-						<label className="text-sm font-medium">Публичный ключ</label>
-						<Input
-							value={keyPair.publicKey}
-							readOnly
-							className="font-mono text-xs"
-						/>
-						<div className="text-xs text-gray-500">
-							e: {e}, n: {n}
-						</div>
-					</div>
-					<div className="flex gap-2">
-						<Button
-							onClick={() => {
-								navigator.clipboard.writeText(keyPair.publicKey)
-							}}
-						>
-							Скопировать ключ
-						</Button>
-						<Button variant="outline" onClick={() => setIsOpen(false)}>
-							Закрыть
-						</Button>
-					</div>
-				</div>
-			</DialogContent>
-		</Dialog>
 	)
 }
