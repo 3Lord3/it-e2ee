@@ -1,7 +1,7 @@
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card"
 import {Button} from "@/components/ui/button"
 import {useAuth} from "@/hooks/useAuth"
-import {mockUsers} from "@/mocks/users"
+import {mockUsers} from "@/types/users"
 
 export default function LoginPage() {
 	const {login} = useAuth()

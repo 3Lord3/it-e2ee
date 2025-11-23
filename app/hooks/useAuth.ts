@@ -1,7 +1,7 @@
 import {useCallback, useState} from "react"
 import {useNavigate} from "react-router"
-import type {MockUser} from "@/mocks/users"
-import {mockUsers} from "@/mocks/users"
+import type {MockUser} from "@/types/users"
+import {mockUsers} from "@/types/users"
 import type {KeyPair} from "@/types/encryption"
 
 interface StoredUser extends Omit<MockUser, 'password' | 'keyPair'> {
