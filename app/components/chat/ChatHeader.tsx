@@ -17,7 +17,7 @@ export function ChatHeader({username, userId, hasPublicKey, onKeySave}: ChatHead
 						<h2 className="font-semibold">{username}</h2>
 						<div className="flex items-center gap-2 mt-1">
 							{hasPublicKey ? (
-								<Badge variant="default">Ключ сохранен</Badge>
+								<Badge variant="default">Ключ сохранён</Badge>
 							) : (
 								<Badge variant="destructive">Нет ключа</Badge>
 							)}

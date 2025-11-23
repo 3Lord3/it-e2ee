@@ -75,7 +75,7 @@ export default function MessengerIndex() {
 					</CardHeader>
 					<CardContent>
 						<p className="text-sm text-gray-600">
-							Начните безопасное общение с обменом ключами шифрования
+							Начните безопасное общение с обмена ключами шифрования
 						</p>
 					</CardContent>
 				</Card>

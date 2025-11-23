@@ -23,7 +23,7 @@ export function KeyManagement() {
 			<CardHeader>
 				<CardTitle>Ключи шифрования</CardTitle>
 				<CardDescription>
-					Управление вашими ключами для безопасного общения
+					Управление вашими ключами шифрования
 				</CardDescription>
 			</CardHeader>
 			<CardContent className="space-y-4">
