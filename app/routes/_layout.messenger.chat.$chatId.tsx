@@ -10,20 +10,18 @@ import {useDispatch, useSelector} from "react-redux"
 import type {RootState} from "@/store"
 import {addMessage, loadUserMessages} from "@/features/chat/chatSlice"
 import {useAuth} from "@/hooks/useAuth"
-import {useKeys} from "@/hooks/useKeys"
-import {decryptWithUnscrambling, encryptWithScrambling} from "@/utils/encryption/rsa"
+import {useEncryption} from "@/hooks/useEncryption"
+import {getAllPublicKeys} from "@/utils/encryption/keyManagement"
 
 export default function ChatPage() {
 	const {chatId} = useParams()
 	const dispatch = useDispatch()
 	const {messages} = useSelector((state: RootState) => state.chat)
 	const {getOtherUsers, logout, currentUser} = useAuth()
-	const {keyPair} = useKeys()
+	const {encryptForUser, decryptMessageForMe, savePublicKey, keyPair} = useEncryption()
 	const [messageText, setMessageText] = useState("")
-	const [otherUserPublicKeys, setOtherUserPublicKeys] = useState<Record<string, string>>(() => {
-		const stored = localStorage.getItem("otherUserPublicKeys")
-		return stored ? JSON.parse(stored) : {}
-	})
+	const [otherUserPublicKeys, setOtherUserPublicKeys] = useState<Record<string, string>>(getAllPublicKeys)
+	const [expandedMessages, setExpandedMessages] = useState<Set<string>>(new Set())
 
 	const otherUsers = getOtherUsers()
 	const otherUser = otherUsers.find(user => user.id === chatId)
@@ -32,30 +30,41 @@ export default function ChatPage() {
 	const chatKey = participants.join('-')
 	const chatMessages = messages[chatKey] || []
 
-	const [e, n] = keyPair.publicKey.split(':')
+	const [e, n] = keyPair?.publicKey.split(':') || ['', '']
 
 	useEffect(() => {
 		dispatch(loadUserMessages())
 	}, [dispatch])
 
 	const handleSavePublicKey = (publicKey: string) => {
-		const updatedKeys = {...otherUserPublicKeys, [chatId!]: publicKey}
-		setOtherUserPublicKeys(updatedKeys)
-		localStorage.setItem("otherUserPublicKeys", JSON.stringify(updatedKeys))
+		console.log('Сохраняю ключ для', chatId, ':', publicKey)
+		savePublicKey(chatId!, publicKey)
+		const allKeys = getAllPublicKeys()
+		console.log('Все ключи после сохранения:', allKeys)
+		setOtherUserPublicKeys(allKeys)
+	}
+
+	const toggleExpandMessage = (messageId: string) => {
+		const newExpanded = new Set(expandedMessages)
+		if (newExpanded.has(messageId)) {
+			newExpanded.delete(messageId)
+		} else {
+			newExpanded.add(messageId)
+		}
+		setExpandedMessages(newExpanded)
 	}
 
 	const handleSendMessage = (e: React.FormEvent) => {
 		e.preventDefault()
 		if (!messageText.trim() || !chatId || !currentUser) return
 
-		const otherUserPublicKey = otherUserPublicKeys[chatId]
-		let content = messageText
 		let isEncrypted = false
+		let encryptedContent = null
 
-		if (otherUserPublicKey) {
+		if (hasPublicKey) {
 			try {
-				const encryptedData = encryptWithScrambling(messageText, otherUserPublicKey)
-				content = JSON.stringify(encryptedData)
+				const encryptedData = encryptForUser(messageText, chatId)
+				encryptedContent = JSON.stringify(encryptedData)
 				isEncrypted = true
 			} catch (error) {
 				console.error("Ошибка шифрования:", error)
@@ -66,7 +75,8 @@ export default function ChatPage() {
 			id: `${Date.now()}-${currentUser.id}-${chatId}`,
 			senderId: currentUser.id,
 			receiverId: chatId,
-			content,
+			content: messageText,
+			encryptedContent: encryptedContent,
 			timestamp: new Date().toISOString(),
 			isEncrypted
 		}
@@ -77,33 +87,19 @@ export default function ChatPage() {
 
 	const getDisplayMessage = (message: any) => {
 		if (message.senderId === currentUser?.id) {
-			if (!message.isEncrypted) {
-				return message.content
-			}
-			try {
-				const encryptedData = JSON.parse(message.content)
-				const decrypted = decryptWithUnscrambling(encryptedData, keyPair.privateKey)
-				return decrypted
-			} catch (error) {
-				return "🔒 Мое зашифрованное сообщение"
-			}
+			return message.content
 		}
 
-		const senderPublicKey = otherUserPublicKeys[message.senderId]
-		if (!senderPublicKey) {
-			return "🔒 Зашифрованное сообщение"
-		}
-
-		if (!message.isEncrypted) {
+		if (!message.isEncrypted || !message.encryptedContent) {
 			return message.content
 		}
 
 		try {
-			const encryptedData = JSON.parse(message.content)
-			const decrypted = decryptWithUnscrambling(encryptedData, keyPair.privateKey)
+			const encryptedData = JSON.parse(message.encryptedContent)
+			const decrypted = decryptMessageForMe(encryptedData)
 			return decrypted
 		} catch (error) {
-			return "🔒 Не удалось расшифровать сообщение"
+			return "🔒 Зашифрованное сообщение"
 		}
 	}
 
@@ -111,10 +107,14 @@ export default function ChatPage() {
 		if (message.senderId === currentUser?.id) {
 			return message.isEncrypted ? "sent_encrypted" : "sent_plain"
 		} else {
-			const senderPublicKey = otherUserPublicKeys[message.senderId]
-			if (!senderPublicKey) return "encrypted"
-			if (!message.isEncrypted) return "plain"
-			return "decrypted"
+			if (!message.isEncrypted || !message.encryptedContent) return "plain"
+			try {
+				const encryptedData = JSON.parse(message.encryptedContent)
+				decryptMessageForMe(encryptedData)
+				return "decrypted"
+			} catch {
+				return "encrypted"
+			}
 		}
 	}
 
@@ -276,6 +276,7 @@ export default function ChatPage() {
 								const isMyMessage = message.senderId === currentUser?.id
 								const messageStatus = getMessageStatus(message)
 								const displayText = getDisplayMessage(message)
+								const isExpanded = expandedMessages.has(message.id)
 
 								return (
 									<div
@@ -316,10 +317,26 @@ export default function ChatPage() {
 													)}
 												</div>
 												<p className="text-sm">{displayText}</p>
+
 												{messageStatus === "encrypted" && (
-													<p className="text-xs mt-1 text-yellow-700">
-														Введите публичный ключ пользователя для расшифровки
-													</p>
+													<div>
+														<p className="text-xs mt-1 text-yellow-700">
+															Введите публичный ключ пользователя для расшифровки
+														</p>
+														<Button
+															variant="outline"
+															size="sm"
+															className="w-full text-xs mt-2"
+															onClick={() => toggleExpandMessage(message.id)}
+														>
+															{isExpanded ? "Скрыть" : "Показать зашифрованные данные"}
+														</Button>
+														{isExpanded && (
+															<div className="mt-2 p-2 bg-black text-green-400 rounded text-xs font-mono break-all">
+																{message.encryptedContent}
+															</div>
+														)}
+													</div>
 												)}
 												<p className={`text-xs mt-1 ${
 													isMyMessage ? "text-primary-foreground/70" : "text-gray-500"
@@ -339,12 +356,13 @@ export default function ChatPage() {
 					<form onSubmit={handleSendMessage} className="flex gap-2 max-w-2xl mx-auto">
 						<Input
 							type="text"
-							placeholder={hasPublicKey ? "Зашифрованное сообщение..." : "Открытое сообщение..."}
+							placeholder={hasPublicKey ? "Зашифрованное сообщение..." : "Введите публичный ключ собеседника чтобы отправлять сообщения"}
 							value={messageText}
 							onChange={(e) => setMessageText(e.target.value)}
 							className="flex-1"
+							disabled={!hasPublicKey}
 						/>
-						<Button type="submit" disabled={!messageText.trim()}>
+						<Button type="submit" disabled={!messageText.trim() || !hasPublicKey}>
 							Отправить
 						</Button>
 					</form>
@@ -354,7 +372,7 @@ export default function ChatPage() {
 						) : (
 							<Alert className="bg-yellow-50 border-yellow-200">
 								<AlertDescription className="text-yellow-800 text-xs">
-									Собеседник не сможет расшифровать ваши сообщения. Введите его публичный ключ для безопасного общения.
+									Введите публичный ключ собеседника чтобы разблокировать отправку сообщений
 								</AlertDescription>
 							</Alert>
 						)}

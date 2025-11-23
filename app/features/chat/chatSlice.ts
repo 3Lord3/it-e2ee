@@ -8,20 +8,11 @@ interface ChatState {
 	messages: Record<string, Message[]>
 }
 
-interface StoredMessage {
-	id: string
-	senderId: string
-	receiverId: string
-	content: string
-	timestamp: string
-	isEncrypted: boolean
-}
-
-const saveMessageForUser = (userId: string, message: StoredMessage) => {
+const saveMessageForUser = (userId: string, message: Message) => {
 	const storageKey = `chatMessages_${userId}`
 	try {
 		const stored = localStorage.getItem(storageKey)
-		const existingMessages: Record<string, StoredMessage[]> = stored ? JSON.parse(stored) : {}
+		const existingMessages: Record<string, Message[]> = stored ? JSON.parse(stored) : {}
 
 		const participants = [message.senderId, message.receiverId].sort()
 		const chatId = participants.join('-')
@@ -42,7 +33,7 @@ const saveMessageForUser = (userId: string, message: StoredMessage) => {
 	}
 }
 
-const saveMessageForBothUsers = (message: StoredMessage) => {
+const saveMessageForBothUsers = (message: Message) => {
 	saveMessageForUser(message.senderId, message)
 	saveMessageForUser(message.receiverId, message)
 }
@@ -57,16 +48,8 @@ const loadMessagesForCurrentUser = (): Record<string, Message[]> => {
 		const stored = localStorage.getItem(storageKey)
 
 		if (stored) {
-			const parsed: Record<string, StoredMessage[]> = JSON.parse(stored)
-			const result: Record<string, Message[]> = {}
-
-			Object.keys(parsed).forEach(chatId => {
-				result[chatId] = parsed[chatId].map(msg => ({
-					...msg,
-					timestamp: new Date(msg.timestamp)
-				}))
-			})
-			return result
+			const parsed: Record<string, Message[]> = JSON.parse(stored)
+			return parsed
 		}
 		return {}
 	} catch {
@@ -94,7 +77,7 @@ const chatSlice = createSlice({
 		setActiveChat: (state, action: PayloadAction<string>) => {
 			state.activeChat = action.payload
 		},
-		addMessage: (state, action: PayloadAction<StoredMessage>) => {
+		addMessage: (state, action: PayloadAction<Message>) => {
 			const message = action.payload
 			const participants = [message.senderId, message.receiverId].sort()
 			const chatId = participants.join('-')
@@ -105,13 +88,8 @@ const chatSlice = createSlice({
 
 			const messageExists = state.messages[chatId].some(msg => msg.id === message.id)
 			if (!messageExists) {
-				const messageWithDate: Message = {
-					...message,
-					timestamp: new Date(message.timestamp)
-				}
-
-				state.messages[chatId].push(messageWithDate)
-				state.messages[chatId].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
+				state.messages[chatId].push(message)
+				state.messages[chatId].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
 			}
 
 			saveMessageForBothUsers(message)

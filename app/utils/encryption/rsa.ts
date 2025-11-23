@@ -114,7 +114,7 @@ export function decryptMessage(encryptedData: number[], privateKey: string): str
 }
 
 export function encryptWithScrambling(message: string, publicKey: string): number[] {
-	const [_, n] = publicKey.split(':').map(Number);
+	const [e, n] = publicKey.split(':').map(Number);
 
 	const randomPrefix = Math.floor(Math.random() * 32) + 65;
 	const data = [randomPrefix, ...message.split('').map(c => c.charCodeAt(0))];
@@ -123,18 +123,33 @@ export function encryptWithScrambling(message: string, publicKey: string): numbe
 		data[i] = (data[i] + data[i - 1]) % n;
 	}
 
-	return encryptMessage(String.fromCharCode(...data), publicKey);
+	const encrypted: number[] = [];
+	for (let i = 0; i < data.length; i++) {
+		const charCode = data[i];
+
+		if (charCode >= n) {
+			throw new Error(`Символ с кодом ${charCode} не может быть зашифрован, так как n=${n}.`);
+		}
+
+		const encryptedChar = modPow(charCode, e, n);
+		encrypted.push(encryptedChar);
+	}
+
+	return encrypted;
 }
 
 export function decryptWithUnscrambling(encryptedData: number[], privateKey: string): string {
-	const [_, n] = privateKey.split(':').map(Number);
+	const [d, n] = privateKey.split(':').map(Number);
 
-	const decryptedStr = decryptMessage(encryptedData, privateKey);
-	const data = decryptedStr.split('').map(c => c.charCodeAt(0));
-
-	for (let i = data.length - 1; i > 0; i--) {
-		data[i] = (data[i] - data[i - 1] + n) % n;
+	const decryptedData: number[] = [];
+	for (const encryptedChar of encryptedData) {
+		const decryptedCharCode = modPow(encryptedChar, d, n);
+		decryptedData.push(decryptedCharCode);
 	}
 
-	return String.fromCharCode(...data.slice(1));
+	for (let i = decryptedData.length - 1; i > 0; i--) {
+		decryptedData[i] = (decryptedData[i] - decryptedData[i - 1] + n) % n;
+	}
+
+	return String.fromCharCode(...decryptedData.slice(1));
 }

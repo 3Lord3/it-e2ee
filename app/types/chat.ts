@@ -9,7 +9,8 @@ export interface Message {
 	senderId: string
 	receiverId: string
 	content: string
-	timestamp: Date
+	encryptedContent?: string | null
+	timestamp: string
 	isEncrypted: boolean
 }
 
