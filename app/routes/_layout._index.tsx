@@ -1,17 +1,17 @@
-import { useEffect } from "react"
-import { useNavigate } from "react-router"
+import {redirect} from "react-router"
+
+export async function clientLoader() {
+	const currentUser = localStorage.getItem("currentUser")
+	if (!currentUser) {
+		throw redirect("/login")
+	}
+	throw redirect("/messenger")
+}
 
 export default function Index() {
-	const navigate = useNavigate()
-
-	useEffect(() => {
-		const currentUser = localStorage.getItem("currentUser")
-		if (!currentUser) {
-			navigate("/login")
-		} else {
-			navigate("/messenger")
-		}
-	}, [navigate])
-
-	return null
+	return (
+		<div className="min-h-screen flex items-center justify-center">
+			<div className="text-lg">Перенаправление...</div>
+		</div>
+	)
 }

@@ -1,59 +1,73 @@
-import {useNavigate} from "react-router"
+import {useState} from "react"
+import {Button} from "@/components/ui/button"
+import {Input} from "@/components/ui/input"
+import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card"
+import {useAuth} from "@/hooks/useAuth"
 
 export default function LoginPage() {
-	const navigate = useNavigate()
+	const {login} = useAuth()
+	const [username, setUsername] = useState("")
+	const [password, setPassword] = useState("")
+	const [error, setError] = useState("")
 
 	const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault()
-		const formData = new FormData(event.currentTarget)
-		const username = formData.get("username") as string
+		setError("")
 
-		const mockUsers = [
-			{id: "1", username: "user1"},
-			{id: "2", username: "user2"},
-			{id: "3", username: "user3"},
-		]
-
-		const user = mockUsers.find(u => u.username === username)
-
-		if (!user) {
-			alert("Пользователь не найден")
-			return
+		const success = login(username, password)
+		if (!success) {
+			setError("Неверное имя пользователя или пароль")
 		}
-
-		localStorage.setItem("currentUser", JSON.stringify(user))
-		navigate("/messenger")
 	}
 
 	return (
-		<div className="min-h-screen flex items-center justify-center bg-gray-50">
-			<div className="max-w-md w-full space-y-8">
-				<div>
-					<h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-						Вход в мессенджер
-					</h2>
-				</div>
-				<form onSubmit={handleSubmit} className="mt-8 space-y-6">
-					<div>
-						<input
-							id="username"
-							name="username"
-							type="text"
-							required
-							className="relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-							placeholder="Имя пользователя"
-						/>
-					</div>
-					<div>
-						<button
-							type="submit"
-							className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
-						>
+		<div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+			<Card className="w-full max-w-md">
+				<CardHeader className="space-y-1">
+					<CardTitle className="text-2xl text-center">Вход в мессенджер</CardTitle>
+					<CardDescription className="text-center">
+						Введите свои данные для входа
+					</CardDescription>
+				</CardHeader>
+				<CardContent>
+					<form onSubmit={handleSubmit} className="space-y-4">
+						<div className="space-y-2">
+							<Input
+								type="text"
+								placeholder="Имя пользователя"
+								value={username}
+								onChange={(e) => setUsername(e.target.value)}
+								required
+							/>
+						</div>
+						<div className="space-y-2">
+							<Input
+								type="password"
+								placeholder="Пароль"
+								value={password}
+								onChange={(e) => setPassword(e.target.value)}
+								required
+							/>
+						</div>
+						{error && (
+							<div className="text-sm text-red-600 text-center">
+								{error}
+							</div>
+						)}
+						<Button type="submit" className="w-full">
 							Войти
-						</button>
+						</Button>
+					</form>
+					<div className="mt-6 text-sm text-gray-600">
+						<p className="font-semibold mb-2">Тестовые пользователи:</p>
+						<div className="space-y-1">
+							<div>alice / password123</div>
+							<div>bob / password123</div>
+							<div>charlie / password123</div>
+						</div>
 					</div>
-				</form>
-			</div>
+				</CardContent>
+			</Card>
 		</div>
 	)
 }
