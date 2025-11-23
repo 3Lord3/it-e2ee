@@ -8,7 +8,7 @@ import {Alert, AlertDescription} from "@/components/ui/alert"
 import {PublicKeyInput} from "@/components/PublicKeyInput"
 import {useDispatch, useSelector} from "react-redux"
 import type {RootState} from "@/store"
-import {addMessage, syncMessages} from "@/features/chat/chatSlice"
+import {addMessage, loadUserMessages} from "@/features/chat/chatSlice"
 import {useAuth} from "@/hooks/useAuth"
 import {useKeys} from "@/hooks/useKeys"
 import {decryptWithUnscrambling, encryptWithScrambling} from "@/utils/encryption/rsa"
@@ -35,7 +35,7 @@ export default function ChatPage() {
 	const [e, n] = keyPair.publicKey.split(':')
 
 	useEffect(() => {
-		dispatch(syncMessages())
+		dispatch(loadUserMessages())
 	}, [dispatch])
 
 	const handleSavePublicKey = (publicKey: string) => {
@@ -63,7 +63,7 @@ export default function ChatPage() {
 		}
 
 		const message = {
-			id: Date.now().toString(),
+			id: `${Date.now()}-${currentUser.id}-${chatId}`,
 			senderId: currentUser.id,
 			receiverId: chatId,
 			content,
@@ -82,9 +82,10 @@ export default function ChatPage() {
 			}
 			try {
 				const encryptedData = JSON.parse(message.content)
-				return decryptWithUnscrambling(encryptedData, keyPair.privateKey)
-			} catch {
-				return message.content
+				const decrypted = decryptWithUnscrambling(encryptedData, keyPair.privateKey)
+				return decrypted
+			} catch (error) {
+				return "🔒 Мое зашифрованное сообщение"
 			}
 		}
 
@@ -99,7 +100,8 @@ export default function ChatPage() {
 
 		try {
 			const encryptedData = JSON.parse(message.content)
-			return decryptWithUnscrambling(encryptedData, keyPair.privateKey)
+			const decrypted = decryptWithUnscrambling(encryptedData, keyPair.privateKey)
+			return decrypted
 		} catch (error) {
 			return "🔒 Не удалось расшифровать сообщение"
 		}

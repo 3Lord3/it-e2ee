@@ -17,68 +17,45 @@ interface StoredMessage {
 	isEncrypted: boolean
 }
 
+const saveMessageForUser = (userId: string, message: StoredMessage) => {
+	const storageKey = `chatMessages_${userId}`
+	try {
+		const stored = localStorage.getItem(storageKey)
+		const existingMessages: Record<string, StoredMessage[]> = stored ? JSON.parse(stored) : {}
+
+		const participants = [message.senderId, message.receiverId].sort()
+		const chatId = participants.join('-')
+
+		if (!existingMessages[chatId]) {
+			existingMessages[chatId] = []
+		}
+
+		const messageExists = existingMessages[chatId].some(msg => msg.id === message.id)
+		if (!messageExists) {
+			existingMessages[chatId].push(message)
+			existingMessages[chatId].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+		}
+
+		localStorage.setItem(storageKey, JSON.stringify(existingMessages))
+	} catch (error) {
+		console.error(`Failed to save message for user ${userId}:`, error)
+	}
+}
+
 const saveMessageForBothUsers = (message: StoredMessage) => {
-	const participants = [message.senderId, message.receiverId]
-
-	participants.forEach(userId => {
-		const storageKey = `chatMessages_${userId}`
-		try {
-			const stored = localStorage.getItem(storageKey)
-			const existingMessages: Record<string, StoredMessage[]> = stored ? JSON.parse(stored) : {}
-
-			const chatId = participants.sort().join('-')
-			if (!existingMessages[chatId]) {
-				existingMessages[chatId] = []
-			}
-
-			const messageExists = existingMessages[chatId].some(msg => msg.id === message.id)
-			if (!messageExists) {
-				existingMessages[chatId].push(message)
-				existingMessages[chatId].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
-			}
-
-			localStorage.setItem(storageKey, JSON.stringify(existingMessages))
-		} catch (error) {
-			console.error(`Failed to save message for user ${userId}:`, error)
-		}
-	})
+	saveMessageForUser(message.senderId, message)
+	saveMessageForUser(message.receiverId, message)
 }
 
-const loadMessagesFromStorage = (): Record<string, Message[]> => {
+const loadMessagesForCurrentUser = (): Record<string, Message[]> => {
 	try {
-		const storageKey = getStorageKey()
-		const stored = localStorage.getItem(storageKey)
-		if (stored) {
-			const parsed: Record<string, StoredMessage[]> = JSON.parse(stored)
-			const result: Record<string, Message[]> = {}
+		const currentUser = localStorage.getItem('currentUser')
+		if (!currentUser) return {}
 
-			Object.keys(parsed).forEach(chatId => {
-				result[chatId] = parsed[chatId].map(msg => ({
-					...msg,
-					timestamp: new Date(msg.timestamp)
-				}))
-			})
-			return result
-		}
-		return {}
-	} catch {
-		return {}
-	}
-}
-
-const getStorageKey = (): string => {
-	const currentUser = localStorage.getItem('currentUser')
-	if (currentUser) {
 		const user = JSON.parse(currentUser)
-		return `chatMessages_${user.id}`
-	}
-	return 'chatMessages'
-}
-
-const getAllChatMessages = (): Record<string, Message[]> => {
-	try {
-		const storageKey = getStorageKey()
+		const storageKey = `chatMessages_${user.id}`
 		const stored = localStorage.getItem(storageKey)
+
 		if (stored) {
 			const parsed: Record<string, StoredMessage[]> = JSON.parse(stored)
 			const result: Record<string, Message[]> = {}
@@ -101,7 +78,7 @@ const initialState: ChatState = {
 	users: [],
 	chats: [],
 	activeChat: null,
-	messages: getAllChatMessages()
+	messages: loadMessagesForCurrentUser()
 }
 
 const chatSlice = createSlice({
@@ -146,21 +123,10 @@ const chatSlice = createSlice({
 			}
 		},
 		loadUserMessages: (state) => {
-			state.messages = getAllChatMessages()
-		},
-		syncMessages: (state) => {
-			state.messages = getAllChatMessages()
+			state.messages = loadMessagesForCurrentUser()
 		}
 	}
 })
 
-export const {
-	setUsers,
-	setChats,
-	setActiveChat,
-	addMessage,
-	markKeyExchanged,
-	loadUserMessages,
-	syncMessages
-} = chatSlice.actions
+export const {setUsers, setChats, setActiveChat, addMessage, markKeyExchanged, loadUserMessages} = chatSlice.actions
 export default chatSlice.reducer
