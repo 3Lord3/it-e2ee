@@ -10,15 +10,16 @@ import {useDispatch, useSelector} from "react-redux"
 import type {RootState} from "@/store"
 import {addMessage, loadUserMessages} from "@/features/chat/chatSlice"
 import {useAuth} from "@/hooks/useAuth"
-import {useEncryption} from "@/hooks/useEncryption"
-import {getAllPublicKeys} from "@/utils/encryption/keyManagement"
+import {useKeys} from "@/hooks/useKeys"
+import {decryptWithUnscrambling, encryptWithScrambling} from "@/utils/encryption/rsa"
+import {getAllPublicKeys, storeOtherUserPublicKey} from "@/utils/encryption/keyManagement"
 
 export default function ChatPage() {
 	const {chatId} = useParams()
 	const dispatch = useDispatch()
 	const {messages} = useSelector((state: RootState) => state.chat)
 	const {getOtherUsers, logout, currentUser} = useAuth()
-	const {encryptForUser, decryptMessageForMe, savePublicKey, keyPair} = useEncryption()
+	const {keyPair} = useKeys()
 	const [messageText, setMessageText] = useState("")
 	const [otherUserPublicKeys, setOtherUserPublicKeys] = useState<Record<string, string>>(getAllPublicKeys)
 	const [expandedMessages, setExpandedMessages] = useState<Set<string>>(new Set())
@@ -30,18 +31,15 @@ export default function ChatPage() {
 	const chatKey = participants.join('-')
 	const chatMessages = messages[chatKey] || []
 
-	const [e, n] = keyPair?.publicKey.split(':') || ['', '']
+	const [e, n] = keyPair.publicKey.split(':')
 
 	useEffect(() => {
 		dispatch(loadUserMessages())
 	}, [dispatch])
 
 	const handleSavePublicKey = (publicKey: string) => {
-		console.log('Сохраняю ключ для', chatId, ':', publicKey)
-		savePublicKey(chatId!, publicKey)
-		const allKeys = getAllPublicKeys()
-		console.log('Все ключи после сохранения:', allKeys)
-		setOtherUserPublicKeys(allKeys)
+		storeOtherUserPublicKey(chatId!, publicKey)
+		setOtherUserPublicKeys(getAllPublicKeys())
 	}
 
 	const toggleExpandMessage = (messageId: string) => {
@@ -63,7 +61,8 @@ export default function ChatPage() {
 
 		if (hasPublicKey) {
 			try {
-				const encryptedData = encryptForUser(messageText, chatId)
+				const otherUserPublicKey = otherUserPublicKeys[chatId]
+				const encryptedData = encryptWithScrambling(messageText, otherUserPublicKey)
 				encryptedContent = JSON.stringify(encryptedData)
 				isEncrypted = true
 			} catch (error) {
@@ -96,9 +95,10 @@ export default function ChatPage() {
 
 		try {
 			const encryptedData = JSON.parse(message.encryptedContent)
-			const decrypted = decryptMessageForMe(encryptedData)
+			const decrypted = decryptWithUnscrambling(encryptedData, keyPair.privateKey)
 			return decrypted
 		} catch (error) {
+			console.error("Ошибка дешифровки:", error)
 			return "🔒 Зашифрованное сообщение"
 		}
 	}
@@ -110,7 +110,7 @@ export default function ChatPage() {
 			if (!message.isEncrypted || !message.encryptedContent) return "plain"
 			try {
 				const encryptedData = JSON.parse(message.encryptedContent)
-				decryptMessageForMe(encryptedData)
+				decryptWithUnscrambling(encryptedData, keyPair.privateKey)
 				return "decrypted"
 			} catch {
 				return "encrypted"
