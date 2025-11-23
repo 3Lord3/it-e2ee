@@ -1,7 +1,8 @@
 import {useCallback, useState} from "react"
 import {useNavigate} from "react-router"
-import type {KeyPair, MockUser} from "@/mocks/users"
+import type {MockUser} from "@/mocks/users"
 import {mockUsers} from "@/mocks/users"
+import type {KeyPair} from "@/types/encryption"
 
 interface StoredUser extends Omit<MockUser, 'password' | 'keyPair'> {
 	keyPair?: KeyPair
@@ -18,7 +19,7 @@ export function useAuth() {
 		const user = mockUsers.find(u => u.username === username && u.password === password)
 		if (user) {
 			const {password: _, ...userWithoutPassword} = user
-			const storedKeyPair = localStorage.getItem("userKeyPair")
+			const storedKeyPair = localStorage.getItem(`userKeyPair_${user.id}`)
 			const keyPair = storedKeyPair ? JSON.parse(storedKeyPair) : null
 			const userWithKeys = keyPair ? {...userWithoutPassword, keyPair} : userWithoutPassword
 			localStorage.setItem("currentUser", JSON.stringify(userWithKeys))

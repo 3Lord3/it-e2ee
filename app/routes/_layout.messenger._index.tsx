@@ -1,6 +1,5 @@
 import {Link} from "react-router"
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card"
-import {Badge} from "@/components/ui/badge"
 import {Button} from "@/components/ui/button"
 import {useAuth} from "@/hooks/useAuth"
 import {useKeys} from "@/hooks/useKeys"
@@ -32,11 +31,6 @@ export default function MessengerIndex() {
 							<div className="p-4">
 								<div className="flex items-center justify-between mb-2">
 									<span className="font-medium">{user.username}</span>
-									<div className="flex items-center gap-2">
-										<Badge variant={user.isOnline ? "default" : "secondary"}>
-											{user.isOnline ? "online" : "offline"}
-										</Badge>
-									</div>
 								</div>
 								<div className="text-sm text-gray-600">
 									{chats.find(chat => chat.participants.includes(user.id))?.publicKeyExchanged
@@ -52,7 +46,9 @@ export default function MessengerIndex() {
 					<Card>
 						<CardContent className="pt-4">
 							<div className="space-y-2">
-								<div className="text-sm font-medium">Мои ключи</div>
+								<div className="text-sm font-medium">Текущий пользователь</div>
+								<div className="text-sm text-gray-900 font-semibold">{currentUser?.username}</div>
+								<div className="text-sm font-medium mt-4">Мои ключи</div>
 								<div className="text-xs text-gray-500 font-mono">
 									e: {e}, n: {n}
 								</div>

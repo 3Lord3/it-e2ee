@@ -1,27 +1,39 @@
 import {useCallback, useState} from "react"
 import {generateKeyPair} from "@/utils/encryption/rsa"
-import type {KeyPair} from "@/mocks/users"
+import type {KeyPair} from "@/types/encryption"
 
 export function useKeys() {
+	const getStorageKey = (): string => {
+		const currentUser = localStorage.getItem('currentUser')
+		if (currentUser) {
+			const user = JSON.parse(currentUser)
+			return `userKeyPair_${user.id}`
+		}
+		return 'userKeyPair'
+	}
+
 	const [keyPair, setKeyPair] = useState<KeyPair>(() => {
-		const stored = localStorage.getItem("userKeyPair")
+		const storageKey = getStorageKey()
+		const stored = localStorage.getItem(storageKey)
 		if (stored) {
 			return JSON.parse(stored)
 		}
 		const newKeyPair = generateKeyPair()
-		localStorage.setItem("userKeyPair", JSON.stringify(newKeyPair))
+		localStorage.setItem(storageKey, JSON.stringify(newKeyPair))
 		return newKeyPair
 	})
 
 	const generateNewKeyPair = useCallback(() => {
+		const storageKey = getStorageKey()
 		const newKeyPair = generateKeyPair()
-		localStorage.setItem("userKeyPair", JSON.stringify(newKeyPair))
+		localStorage.setItem(storageKey, JSON.stringify(newKeyPair))
 		setKeyPair(newKeyPair)
 		return newKeyPair
 	}, [])
 
 	const clearKeyPair = useCallback(() => {
-		localStorage.removeItem("userKeyPair")
+		const storageKey = getStorageKey()
+		localStorage.removeItem(storageKey)
 		const newKeyPair = generateKeyPair()
 		setKeyPair(newKeyPair)
 	}, [])

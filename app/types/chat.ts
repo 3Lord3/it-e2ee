@@ -2,7 +2,6 @@ export interface User {
 	id: string
 	username: string
 	publicKey?: string
-	isOnline: boolean
 }
 
 export interface Message {
