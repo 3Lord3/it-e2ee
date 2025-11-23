@@ -1,9 +1,9 @@
-import type { KeyPair } from '@/types/encryption';
-import { generateKeyPair } from '@/utils/encryption/rsa';
+import type {KeyPair} from '@/types/encryption';
+import {generateKeyPair} from '@/utils/encryption/rsa';
 
 const STORAGE_KEYS = {
 	KEY_PAIR: 'user_key_pair',
-	PUBLIC_KEYS: 'other_users_public_keys'
+	PUBLIC_KEYS: 'public_keys_'
 };
 
 export function generateAndStoreKeyPair(): KeyPair {
@@ -17,20 +17,23 @@ export function getStoredKeyPair(): KeyPair | null {
 	return stored ? JSON.parse(stored) : null;
 }
 
-export function storeOtherUserPublicKey(userId: string, publicKey: string): void {
-	const stored = localStorage.getItem(STORAGE_KEYS.PUBLIC_KEYS);
+export function storeOtherUserPublicKey(currentUserId: string, otherUserId: string, publicKey: string): void {
+	const storageKey = STORAGE_KEYS.PUBLIC_KEYS + currentUserId;
+	const stored = localStorage.getItem(storageKey);
 	const publicKeys = stored ? JSON.parse(stored) : {};
-	publicKeys[userId] = publicKey;
-	localStorage.setItem(STORAGE_KEYS.PUBLIC_KEYS, JSON.stringify(publicKeys));
+	publicKeys[otherUserId] = publicKey;
+	localStorage.setItem(storageKey, JSON.stringify(publicKeys));
 }
 
-export function getOtherUserPublicKey(userId: string): string | null {
-	const stored = localStorage.getItem(STORAGE_KEYS.PUBLIC_KEYS);
+export function getOtherUserPublicKey(currentUserId: string, otherUserId: string): string | null {
+	const storageKey = STORAGE_KEYS.PUBLIC_KEYS + currentUserId;
+	const stored = localStorage.getItem(storageKey);
 	const publicKeys = stored ? JSON.parse(stored) : {};
-	return publicKeys[userId] || null;
+	return publicKeys[otherUserId] || null;
 }
 
-export function getAllPublicKeys(): Record<string, string> {
-	const stored = localStorage.getItem(STORAGE_KEYS.PUBLIC_KEYS);
+export function getAllPublicKeys(currentUserId: string): Record<string, string> {
+	const storageKey = STORAGE_KEYS.PUBLIC_KEYS + currentUserId;
+	const stored = localStorage.getItem(storageKey);
 	return stored ? JSON.parse(stored) : {};
 }

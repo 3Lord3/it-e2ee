@@ -1,12 +1,18 @@
 import {useState} from "react"
 import {getAllPublicKeys, storeOtherUserPublicKey} from "@/utils/encryption/keyManagement"
+import {useAuth} from "@/hooks/useAuth"
 
 export function usePublicKeys() {
-	const [otherUserPublicKeys, setOtherUserPublicKeys] = useState<Record<string, string>>(getAllPublicKeys)
+	const {currentUser} = useAuth()
+	const currentUserId = currentUser?.id || ''
+
+	const [otherUserPublicKeys, setOtherUserPublicKeys] = useState<Record<string, string>>(
+		() => getAllPublicKeys(currentUserId)
+	)
 
 	const savePublicKey = (userId: string, publicKey: string) => {
-		storeOtherUserPublicKey(userId, publicKey)
-		setOtherUserPublicKeys(getAllPublicKeys())
+		storeOtherUserPublicKey(currentUserId, userId, publicKey)
+		setOtherUserPublicKeys(getAllPublicKeys(currentUserId))
 	}
 
 	const hasPublicKey = (userId: string) => {

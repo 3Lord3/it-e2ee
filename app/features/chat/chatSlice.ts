@@ -48,8 +48,7 @@ const loadMessagesForCurrentUser = (): Record<string, Message[]> => {
 		const stored = localStorage.getItem(storageKey)
 
 		if (stored) {
-			const parsed: Record<string, Message[]> = JSON.parse(stored)
-			return parsed
+			return JSON.parse(stored)
 		}
 		return {}
 	} catch {
@@ -74,9 +73,6 @@ const chatSlice = createSlice({
 		setChats: (state, action: PayloadAction<Chat[]>) => {
 			state.chats = action.payload
 		},
-		setActiveChat: (state, action: PayloadAction<string>) => {
-			state.activeChat = action.payload
-		},
 		addMessage: (state, action: PayloadAction<Message>) => {
 			const message = action.payload
 			const participants = [message.senderId, message.receiverId].sort()
@@ -94,17 +90,11 @@ const chatSlice = createSlice({
 
 			saveMessageForBothUsers(message)
 		},
-		markKeyExchanged: (state, action: PayloadAction<string>) => {
-			const chat = state.chats.find(c => c.id === action.payload)
-			if (chat) {
-				chat.publicKeyExchanged = true
-			}
-		},
 		loadUserMessages: (state) => {
 			state.messages = loadMessagesForCurrentUser()
 		}
 	}
 })
 
-export const {setUsers, setChats, setActiveChat, addMessage, markKeyExchanged, loadUserMessages} = chatSlice.actions
+export const {setUsers, setChats, addMessage, loadUserMessages} = chatSlice.actions
 export default chatSlice.reducer

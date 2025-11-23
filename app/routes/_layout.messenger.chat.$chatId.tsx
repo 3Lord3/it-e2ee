@@ -46,9 +46,9 @@ export default function ChatPage() {
 		let isEncrypted = false
 		let encryptedContent = null
 
-		if (hasPublicKey(chatId!)) {
+		if (hasPublicKey(chatId)) {
 			try {
-				const otherUserPublicKey = otherUserPublicKeys[chatId!]
+				const otherUserPublicKey = otherUserPublicKeys[chatId]
 				const encryptedData = encryptWithScrambling(messageText, otherUserPublicKey)
 				encryptedContent = JSON.stringify(encryptedData)
 				isEncrypted = true

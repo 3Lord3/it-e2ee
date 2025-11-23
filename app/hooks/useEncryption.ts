@@ -1,15 +1,11 @@
-import { useState, useCallback } from 'react';
-import { type KeyPair } from '@/types/encryption';
-import {
-	generateKeyPair,
-	encryptWithScrambling,
-	decryptWithUnscrambling
-} from '@/utils/encryption/rsa';
+import {useCallback, useState} from 'react';
+import {type KeyPair} from '@/types/encryption';
+import {decryptWithUnscrambling, encryptWithScrambling} from '@/utils/encryption/rsa';
 import {
 	generateAndStoreKeyPair,
+	getOtherUserPublicKey,
 	getStoredKeyPair,
-	storeOtherUserPublicKey,
-	getOtherUserPublicKey
+	storeOtherUserPublicKey
 } from '@/utils/encryption/keyManagement';
 
 export function useEncryption() {
@@ -21,8 +17,8 @@ export function useEncryption() {
 		return newKeyPair;
 	}, []);
 
-	const encryptForUser = useCallback((message: string, targetUserId: string): number[] => {
-		const targetPublicKey = getOtherUserPublicKey(targetUserId);
+	const encryptForUser = useCallback((message: string, currentUserId: string, targetUserId: string): number[] => {
+		const targetPublicKey = getOtherUserPublicKey(currentUserId, targetUserId);
 		if (!targetPublicKey) {
 			throw new Error(`Публичный ключ пользователя ${targetUserId} не найден`);
 		}
@@ -38,12 +34,12 @@ export function useEncryption() {
 		return decryptWithUnscrambling(encryptedData, keyPair.privateKey);
 	}, [keyPair]);
 
-	const savePublicKey = useCallback((userId: string, publicKey: string) => {
-		storeOtherUserPublicKey(userId, publicKey);
+	const savePublicKey = useCallback((currentUserId: string, userId: string, publicKey: string) => {
+		storeOtherUserPublicKey(currentUserId, userId, publicKey);
 	}, []);
 
-	const getPublicKey = useCallback((userId: string): string | null => {
-		return getOtherUserPublicKey(userId);
+	const getPublicKey = useCallback((currentUserId: string, userId: string): string | null => {
+		return getOtherUserPublicKey(currentUserId, userId);
 	}, []);
 
 	return {

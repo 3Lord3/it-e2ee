@@ -81,38 +81,6 @@ export function generateKeyPair(): KeyPair {
 	};
 }
 
-export function encryptMessage(message: string, publicKey: string): number[] {
-	const [e, n] = publicKey.split(':').map(Number);
-
-	const encrypted: number[] = [];
-
-	for (let i = 0; i < message.length; i++) {
-		const charCode = message.charCodeAt(i);
-
-		if (charCode >= n) {
-			throw new Error(`Символ '${message[i]}' (код ${charCode}) не может быть зашифрован, так как n=${n}. Используйте большие простые числа.`);
-		}
-
-		const encryptedChar = modPow(charCode, e, n);
-		encrypted.push(encryptedChar);
-	}
-
-	return encrypted;
-}
-
-export function decryptMessage(encryptedData: number[], privateKey: string): string {
-	const [d, n] = privateKey.split(':').map(Number);
-
-	let decrypted = '';
-
-	for (const encryptedChar of encryptedData) {
-		const decryptedCharCode = modPow(encryptedChar, d, n);
-		decrypted += String.fromCharCode(decryptedCharCode);
-	}
-
-	return decrypted;
-}
-
 export function encryptWithScrambling(message: string, publicKey: string): number[] {
 	const [e, n] = publicKey.split(':').map(Number);
 
