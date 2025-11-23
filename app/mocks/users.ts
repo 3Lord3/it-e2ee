@@ -1,7 +1,4 @@
-export interface KeyPair {
-	publicKey: string
-	privateKey: string
-}
+import type {KeyPair} from "@/types/encryption"
 
 export interface MockUser {
 	id: string

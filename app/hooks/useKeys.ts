@@ -3,9 +3,14 @@ import {generateKeyPair} from "@/utils/encryption/rsa"
 import type {KeyPair} from "@/mocks/users"
 
 export function useKeys() {
-	const [keyPair, setKeyPair] = useState<KeyPair | null>(() => {
+	const [keyPair, setKeyPair] = useState<KeyPair>(() => {
 		const stored = localStorage.getItem("userKeyPair")
-		return stored ? JSON.parse(stored) : null
+		if (stored) {
+			return JSON.parse(stored)
+		}
+		const newKeyPair = generateKeyPair()
+		localStorage.setItem("userKeyPair", JSON.stringify(newKeyPair))
+		return newKeyPair
 	})
 
 	const generateNewKeyPair = useCallback(() => {
@@ -17,13 +22,13 @@ export function useKeys() {
 
 	const clearKeyPair = useCallback(() => {
 		localStorage.removeItem("userKeyPair")
-		setKeyPair(null)
+		const newKeyPair = generateKeyPair()
+		setKeyPair(newKeyPair)
 	}, [])
 
 	return {
 		keyPair,
 		generateNewKeyPair,
-		clearKeyPair,
-		hasKeys: !!keyPair
+		clearKeyPair
 	}
 }

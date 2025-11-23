@@ -18,8 +18,11 @@ export function useAuth() {
 		const user = mockUsers.find(u => u.username === username && u.password === password)
 		if (user) {
 			const {password: _, ...userWithoutPassword} = user
-			localStorage.setItem("currentUser", JSON.stringify(userWithoutPassword))
-			setCurrentUser(userWithoutPassword)
+			const storedKeyPair = localStorage.getItem("userKeyPair")
+			const keyPair = storedKeyPair ? JSON.parse(storedKeyPair) : null
+			const userWithKeys = keyPair ? {...userWithoutPassword, keyPair} : userWithoutPassword
+			localStorage.setItem("currentUser", JSON.stringify(userWithKeys))
+			setCurrentUser(userWithKeys)
 			navigate("/messenger", {replace: true})
 			return true
 		}

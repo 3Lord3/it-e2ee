@@ -25,10 +25,14 @@ const routes: RouteConfig = [
 						path: "chat/:chatId",
 						file: "routes/_layout.messenger.chat.$chatId.tsx",
 					},
+					{
+						path: "keys",
+						file: "routes/_layout.messenger.keys.tsx",
+					},
 				],
 			},
 		],
 	},
 ]
 
-export default routes;
+export default routes

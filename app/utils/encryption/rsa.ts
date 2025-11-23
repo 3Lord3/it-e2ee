@@ -1,4 +1,4 @@
-import type { KeyPair, PublicKey, PrivateKey } from '@/types/encryption';
+import type {KeyPair} from "@/types/encryption"
 
 function gcd(a: number, b: number): number {
 	while (b !== 0) {
@@ -50,11 +50,11 @@ function modPow(base: number, exponent: number, modulus: number): number {
 	return result;
 }
 
-export function generateKeyPair(p: number = 17, q: number = 19): KeyPair {
+export function generateKeyPair(p: number = 61, q: number = 53): KeyPair {
 	const n = p * q;
 	const phi = (p - 1) * (q - 1);
 
-	let e = 5;
+	let e = 17;
 	while (e < phi) {
 		if (gcd(e, phi) === 1) break;
 		e++;
@@ -62,18 +62,14 @@ export function generateKeyPair(p: number = 17, q: number = 19): KeyPair {
 
 	const d = modInverse(e, phi);
 
-	const publicKey: PublicKey = { e, n };
-	const privateKey: PrivateKey = { d, n };
-
 	return {
-		publicKey: JSON.stringify(publicKey),
-		privateKey: JSON.stringify(privateKey)
+		publicKey: `${e}:${n}`,
+		privateKey: `${d}:${n}`
 	};
 }
 
-export function encryptMessage(message: string, publicKeyStr: string): number[] {
-	const publicKey: PublicKey = JSON.parse(publicKeyStr);
-	const { e, n } = publicKey;
+export function encryptMessage(message: string, publicKey: string): number[] {
+	const [e, n] = publicKey.split(':').map(Number);
 
 	const encrypted: number[] = [];
 
@@ -91,9 +87,8 @@ export function encryptMessage(message: string, publicKeyStr: string): number[] 
 	return encrypted;
 }
 
-export function decryptMessage(encryptedData: number[], privateKeyStr: string): string {
-	const privateKey: PrivateKey = JSON.parse(privateKeyStr);
-	const { d, n } = privateKey;
+export function decryptMessage(encryptedData: number[], privateKey: string): string {
+	const [d, n] = privateKey.split(':').map(Number);
 
 	let decrypted = '';
 
@@ -105,9 +100,8 @@ export function decryptMessage(encryptedData: number[], privateKeyStr: string): 
 	return decrypted;
 }
 
-export function encryptWithScrambling(message: string, publicKeyStr: string): number[] {
-	const publicKey: PublicKey = JSON.parse(publicKeyStr);
-	const { n } = publicKey;
+export function encryptWithScrambling(message: string, publicKey: string): number[] {
+	const [_, n] = publicKey.split(':').map(Number);
 
 	const randomPrefix = Math.floor(Math.random() * 32) + 65;
 	const data = [randomPrefix, ...message.split('').map(c => c.charCodeAt(0))];
@@ -116,14 +110,13 @@ export function encryptWithScrambling(message: string, publicKeyStr: string): nu
 		data[i] = (data[i] + data[i - 1]) % n;
 	}
 
-	return encryptMessage(String.fromCharCode(...data), publicKeyStr);
+	return encryptMessage(String.fromCharCode(...data), publicKey);
 }
 
-export function decryptWithUnscrambling(encryptedData: number[], privateKeyStr: string): string {
-	const privateKey: PrivateKey = JSON.parse(privateKeyStr);
-	const { n } = privateKey;
+export function decryptWithUnscrambling(encryptedData: number[], privateKey: string): string {
+	const [_, n] = privateKey.split(':').map(Number);
 
-	const decryptedStr = decryptMessage(encryptedData, privateKeyStr);
+	const decryptedStr = decryptMessage(encryptedData, privateKey);
 	const data = decryptedStr.split('').map(c => c.charCodeAt(0));
 
 	for (let i = data.length - 1; i > 0; i--) {

@@ -1,23 +1,28 @@
 import {Link} from "react-router"
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card"
 import {Badge} from "@/components/ui/badge"
+import {Button} from "@/components/ui/button"
 import {useAuth} from "@/hooks/useAuth"
+import {useKeys} from "@/hooks/useKeys"
 import {useSelector} from "react-redux"
 import type {RootState} from "@/store"
 
 export default function MessengerIndex() {
-	const {getOtherUsers} = useAuth()
+	const {getOtherUsers, logout, currentUser} = useAuth()
+	const {keyPair} = useKeys()
 	const {chats} = useSelector((state: RootState) => state.chat)
 
 	const otherUsers = getOtherUsers()
+	const [e, n] = keyPair.publicKey.split(':')
 
 	return (
-		<div className="flex w-full">
-			<div className="w-80 border-r bg-gray-50/50">
+		<div className="flex w-full h-screen">
+			<div className="w-80 border-r bg-gray-50/50 flex flex-col">
 				<div className="p-4 border-b">
 					<h1 className="text-xl font-semibold">Чаты</h1>
 				</div>
-				<div className="overflow-y-auto">
+
+				<div className="flex-1 overflow-y-auto">
 					{otherUsers.map(user => (
 						<Link
 							key={user.id}
@@ -41,6 +46,26 @@ export default function MessengerIndex() {
 							</div>
 						</Link>
 					))}
+				</div>
+
+				<div className="border-t p-4 space-y-4">
+					<Card>
+						<CardContent className="pt-4">
+							<div className="space-y-2">
+								<div className="text-sm font-medium">Мои ключи</div>
+								<div className="text-xs text-gray-500 font-mono">
+									e: {e}, n: {n}
+								</div>
+								<Button variant="outline" size="sm" className="w-full" asChild>
+									<Link to="/messenger/keys">Управление ключами</Link>
+								</Button>
+							</div>
+						</CardContent>
+					</Card>
+
+					<Button variant="destructive" onClick={logout} className="w-full">
+						Выход
+					</Button>
 				</div>
 			</div>
 
