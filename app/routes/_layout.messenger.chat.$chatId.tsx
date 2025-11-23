@@ -292,16 +292,16 @@ export default function ChatPage() {
 										}`}>
 											<CardContent className="p-3">
 												<div className="flex items-center gap-2 mb-1">
-                          <span className="text-xs opacity-70">
-                            {isMyMessage ? "Вы" : otherUser.username}
-                          </span>
+													<span className="text-xs opacity-70">
+															{isMyMessage ? "Вы" : otherUser.username}
+													</span>
 													{messageStatus === "sent_encrypted" && (
-														<Badge variant="outline" className="text-xs">
+														<Badge variant="secondary" className="text-xs bg-primary-foreground text-primary">
 															Зашифровано
 														</Badge>
 													)}
 													{messageStatus === "sent_plain" && (
-														<Badge variant="outline" className="text-xs">
+														<Badge variant="secondary" className="text-xs bg-primary-foreground text-primary">
 															Отправлено
 														</Badge>
 													)}
